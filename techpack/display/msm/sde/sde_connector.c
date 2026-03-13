@@ -2974,9 +2974,35 @@ static ssize_t twm_enable_show(struct device *device,
 
 static DEVICE_ATTR_RO(panel_power_state);
 static DEVICE_ATTR_RW(twm_enable);
+static ssize_t bl_scale_sv_show(struct device *device,
+	struct device_attribute *attr, char *buf)
+{
+	struct drm_connector *conn = dev_get_drvdata(device);
+	struct sde_connector *sde_conn = to_sde_connector(conn);
+
+	return scnprintf(buf, PAGE_SIZE, "%u\n", sde_conn->bl_scale_sv);
+}
+
+static ssize_t bl_scale_sv_store(struct device *device,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct drm_connector *conn = dev_get_drvdata(device);
+	struct sde_connector *sde_conn = to_sde_connector(conn);
+	u32 val;
+
+	if (kstrtou32(buf, 10, &val))
+		return -EINVAL;
+
+	sde_conn->bl_scale_sv = val;
+	sde_conn->bl_scale_dirty = true;
+	return count;
+}
+
+static DEVICE_ATTR_RW(bl_scale_sv);
 
 static struct attribute *sde_connector_dev_attrs[] = {
 	&dev_attr_panel_power_state.attr,
+	&dev_attr_bl_scale_sv.attr,
 	&dev_attr_twm_enable.attr,
 	NULL
 };
