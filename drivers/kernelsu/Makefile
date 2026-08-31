@@ -11,12 +11,12 @@ MDIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 $(info -- KDIR: $(KDIR))
 $(info -- MDIR: $(MDIR))
 
-# Universal API baseline: satisfies KernelSU-Next v3.2.0 min (33110) and official
-# v3.2.5 min (32513). Per-manager versionCode is synced via ksuver_override on crown.
-CFLAGS_ksu.o += -DKSU_VERSION=33110
+# Universal API baseline: satisfies KernelSU-Next v3.2.0 min and official
+# Per-manager versionCode is synced via ksuver_override on crown.
+CFLAGS_ksu.o += -DKSU_VERSION=33214
 
 ifndef KSU_OFFICIAL_MANAGER_VER
-KSU_OFFICIAL_MANAGER_VER := 32525
+KSU_OFFICIAL_MANAGER_VER := 32601
 endif
 CFLAGS_ksu.o += -DKSU_OFFICIAL_MANAGER_VER=$(KSU_OFFICIAL_MANAGER_VER)
 

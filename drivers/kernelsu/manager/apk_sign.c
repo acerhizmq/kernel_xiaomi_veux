@@ -361,10 +361,10 @@ static u32 matched_manager_version;
 static const struct ksu_manager_sign ksu_known_managers[] = {
 	{ 0x363, "4359c171f32543394cbc23ef908c4bb94cad7c8087002ba164c8230948c21549", 32522 }, // backslashxx dummy.keystore
 	{ 0x375, "484fcba6e6c43b1fb09700633bf2fb4758f13cb0b2f4457b80d075084b26c588", 33110 }, // KOWX712/KernelSU
-	{ 0x3e6, "79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7", 33129 }, // rifsxd/KernelSU-Next v3.2.0
+	{ 0x3e6, "79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7", 33214 }, // rifsxd/KernelSU-Next
 	{ 0x396, "f415f4ed9435427e1fdf7f1fccd4dbc07b3d6b8751e4dbcec6f19671f427870b", 32490 }, // rsuntk/KernelSU
 	{ 0x384, "a9462b8b98ea1ca7901b0cbdcebfaa35f0aa95e51b01d66e6b6d2c81b97746d8", 33110 }, // MamboSU
-	{ 0x381, "52d52d8c8bfbe53dc2b6ff1c613184e2c03013e090fe8905d8e3d5dc2658c2e4", 33110 }, // WKSU (5ec1cff)
+	{ 0x381, "52d52d8c8bfbe53dc2b6ff1c613184e2c03013e090fe8905d8e3d5dc2658c2e4", 33208 }, // WKSU (Wild KSU)
 	{ 0x377, "d3469712b6214462764a1d8d3e5cbe1d6819a0b629791b9f4101867821f1df64", 33110 }, // ReSukiSU
 	{ 0x35c, "947ae944f3de4ed4c21a7e4f7953ecf351bfa2b36239da37a34111ad29993eef", 40796 }, // SukiSU-Ultra v4.1.3
 };
