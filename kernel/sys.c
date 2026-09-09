@@ -58,6 +58,7 @@
 #include <linux/sched/mm.h>
 #include <linux/sched/coredump.h>
 #include <linux/sched/task.h>
+#include <linux/sched/signal.h>
 #include <linux/sched/cputime.h>
 #include <linux/rcupdate.h>
 #include <linux/uidgid.h>
@@ -1243,22 +1244,60 @@ static int override_release(char __user *release, size_t len)
 SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
 {
 	struct new_utsname tmp;
+	struct task_struct *t;
+	bool is_bpf_loader = false;
+	bool is_gms = false;
 
 	down_read(&uts_sem);
 	memcpy(&tmp, utsname(), sizeof(tmp));
-	if (!strncmp(current->comm, "bpfloader", 9) ||
-	    !strncmp(current->comm, "netbpfload", 10) ||
-	    !strncmp(current->comm, "netd", 4)) {
+	up_read(&uts_sem);
+
+	/*
+	 * Only genuine system daemons (UID < 10000) get the BPF compatibility spoof.
+	 * Untrusted 3rd-party detector apps (UID >= 10000) will never match here,
+	 * even if they disguise their thread name using prctl().
+	 */
+	if (current_uid().val < 10000) {
+		if (!strncmp(current->comm, "bpfloader", 9) ||
+		    !strncmp(current->comm, "netbpfload", 10) ||
+		    !strncmp(current->comm, "netd", 4)) {
+			is_bpf_loader = true;
+		}
+	}
+
+	/*
+	 * Catch Google Play Services DroidGuard (Play Integrity attestation worker)
+	 * running in com.google.android.gms.unstable (truncated to 15 chars).
+	 */
+	rcu_read_lock();
+	for_each_thread(current, t) {
+		if (thread_group_leader(t)) {
+			if (!strcmp(t->comm, "id.gms.unstable")) {
+				is_gms = true;
+				break;
+			}
+		}
+	}
+	rcu_read_unlock();
+
+	if (is_bpf_loader) {
 		strcpy(tmp.release, "5.10.239");
-		pr_debug("fake uname: %s/%d release=%s\n",
+		pr_debug("fake uname (bpf): %s/%d release=%s\n",
+			 current->comm, current->pid, tmp.release);
+	} else if (is_gms) {
+		strcpy(tmp.release, "5.10.236-android12-9-00003-gfb24cf99ad97-ab14313284");
+		strcpy(tmp.version, "#1 SMP PREEMPT Wed Jan 15 12:00:00 UTC 2025");
+		pr_debug("fake uname (gms): %s/%d release=%s\n",
 			 current->comm, current->pid, tmp.release);
 	}
-	up_read(&uts_sem);
+
 	if (copy_to_user(name, &tmp, sizeof(tmp)))
 		return -EFAULT;
 
-	if (override_release(name->release, sizeof(name->release)))
-		return -EFAULT;
+	if (!is_gms) {
+		if (override_release(name->release, sizeof(name->release)))
+			return -EFAULT;
+	}
 	if (override_architecture(name))
 		return -EFAULT;
 	return 0;
