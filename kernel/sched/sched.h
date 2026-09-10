@@ -2199,6 +2199,14 @@ unsigned long arch_scale_max_freq_capacity(struct sched_domain *sd, int cpu)
 }
 #endif
 
+#ifndef arch_scale_min_freq_capacity
+static __always_inline
+unsigned long arch_scale_min_freq_capacity(int cpu)
+{
+	return 0;
+}
+#endif
+
 unsigned long capacity_curr_of(int cpu);
 
 #ifdef CONFIG_SCHED_WALT

@@ -165,12 +165,22 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync, bool rt
 		struct cpuidle_state *idle_state;
 		struct rq *rq = cpu_rq(cpu);
 
+		if (is_reserved(cpu))
+			continue;
+
 		/* Get the original, maximum _possible_ capacity of this CPU */
 		curr->cap_max = arch_scale_cpu_capacity(cpu);
 
 		/* Prefer the CPU that more closely meets the uclamp minimum */
 		if (curr->cap_max < uc_min && curr->cap_max < best->cap_max)
 			continue;
+
+#ifdef CONFIG_SCHED_WALT
+		/* Prefer high-capacity (Big) CPUs for WALT boosted / RTG tasks */
+		if ((task_in_related_thread_group(p) || per_task_boost(p) > 0) &&
+		    curr->cap_max < best->cap_max)
+			continue;
+#endif
 
 		/*
 		 * Check if this CPU is idle or only has SCHED_IDLE tasks. For
@@ -180,13 +190,14 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync, bool rt
 		if ((sync && cpu == this_cpu && rq->nr_running == 1) ||
 		    available_idle_cpu(cpu) || sched_idle_cpu(cpu)) {
 			/*
-			 * A non-idle candidate may be better when @p is uclamp
-			 * boosted. Otherwise, always prefer idle candidates.
+			 * A non-idle candidate may be better for energy
+			 * efficiency when @p is uclamp boosted above @curr's
+			 * minimum capacity. Otherwise, prefer idle candidates.
 			 */
-			if (!uc_min) {
+			if (!has_idle &&
+			    uc_min <= arch_scale_min_freq_capacity(cpu)) {
 				/* Discard any previous non-idle candidate */
-				if (!has_idle)
-					best = curr;
+				best = curr;
 				has_idle = true;
 			}
 
