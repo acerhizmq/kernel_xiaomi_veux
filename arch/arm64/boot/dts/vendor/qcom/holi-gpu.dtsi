@@ -35,6 +35,7 @@ msm_gpu: qcom,kgsl-3d0@5900000 {
 		vdd-parent-supply = <&S3A_LEVEL>;
 		vdd-parent-min-corner = <RPM_SMD_REGULATOR_LEVEL_RETENTION>;
 		qcom,chipid = <0x06010900>;
+		qcom,tzone-names = "gpuss-0-usr", "gpuss-1-usr";
 
 		nvmem-cells = <&gpu_speed_bin>, <&gpu_gaming_bin>;
 		nvmem-cell-names = "speed_bin", "gaming_bin";
