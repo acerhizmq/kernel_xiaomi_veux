@@ -1211,7 +1211,7 @@ static int dsi_pll_5nm_lock_status(struct dsi_pll_resource *pll)
 	int rc;
 	u32 status;
 	u32 const delay_us = 100;
-	u32 const timeout_us = 5000;
+	u32 const timeout_us = 20000;
 
 	rc = readl_poll_timeout_atomic(pll->pll_base + PLL_COMMON_STATUS_ONE,
 				       status,
@@ -1240,7 +1240,7 @@ static void dsi_pll_enable_pll_bias(struct dsi_pll_resource *rsc)
 
 	DSI_PLL_REG_W(rsc->phy_base, PHY_CMN_CTRL_0, data | BIT(5));
 	DSI_PLL_REG_W(rsc->pll_base, PLL_SYSTEM_MUXES, 0xc0);
-	ndelay(250);
+	udelay(50);
 }
 
 static void dsi_pll_disable_global_clk(struct dsi_pll_resource *rsc)
@@ -1280,6 +1280,7 @@ static void dsi_pll_phy_dig_reset(struct dsi_pll_resource *rsc)
 static int dsi_pll_enable(struct dsi_pll_vco_clk *vco)
 {
 	int rc;
+	int retries = 3;
 	struct dsi_pll_resource *rsc = vco->priv;
 	struct dsi_pll_5nm *pll = rsc->priv;
 
@@ -1311,8 +1312,27 @@ static int dsi_pll_enable(struct dsi_pll_vco_clk *vco)
 
 	/* Check for PLL lock */
 	rc = dsi_pll_5nm_lock_status(rsc);
+	while (rc && retries--) {
+		pr_warn("DSI PLL(%d) lock missed on wake, resetting and retrying (%d attempts left)...\n",
+			rsc->index, retries);
+
+		/* Reset PHY digital domain to clean up state from power collapse */
+		dsi_pll_phy_dig_reset(rsc);
+		if (rsc->slave)
+			dsi_pll_phy_dig_reset(rsc->slave);
+
+		/* Toggle PLL enable bit */
+		DSI_PLL_REG_W(rsc->phy_base, PHY_CMN_PLL_CNTRL, 0x00);
+		wmb();
+		udelay(100);
+		DSI_PLL_REG_W(rsc->phy_base, PHY_CMN_PLL_CNTRL, 0x01);
+		wmb();
+
+		rc = dsi_pll_5nm_lock_status(rsc);
+	}
+
 	if (rc) {
-		pr_err("PLL(%d) lock failed\n", rsc->index);
+		pr_err("PLL(%d) lock failed after retries\n", rsc->index);
 		goto error;
 	}
 
